@@ -30,23 +30,27 @@ jobs:
         repo init -u https://android.googlesource.com/platform/manifest -b android16-release --depth=1
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
-    - name: 4. 載入 M14 5G 的 64位元硬體裝置樹並強行注入 Android 16 記憶體優化
+    - name: 4. 導入你挖到的 M14 5G 晶片硬體裝置樹
       run: |
         cd /work/aosp
-        git clone https://github.com/your_github/android_device_samsung_m14x.git device/samsung/m14x
-        echo "ro.config.low_ram=true" >> device/samsung/m14x/system.prop
-        echo "ro.config.android16_ext_lowram=true" >> device/samsung/m14x/system.prop
+        # 複製你截圖中找到的 Exynos 1330 真實裝置樹
+        git clone https://github.com/devhunter1/android_device_samsung_s5e8535-common.git device/samsung/s5e8535-common
+        
+        # 為 4GB RAM 的 M14 注入 Android 16 低記憶體流暢優化
+        mkdir -p device/samsung/s5e8535-common
+        echo "ro.config.low_ram=true" >> device/samsung/s5e8535-common/system.prop
+        echo "ro.config.android16_ext_lowram=true" >> device/samsung/s5e8535-common/system.prop
 
-    - name: 5. 點火！全速編譯 Android 16 系統
+    - name: 5. 點火！全速編譯 M14 5G 專屬 Android 16 系統
       run: |
         cd /work/aosp
         source build/envsetup.sh
-        lunch aosp_m14x-userdebug
+        # 載入 Exynos 1330 (s5e8535) 的編譯目標
+        lunch aosp_s5e8535_common-userdebug
         mka bacon -j$(nproc)
 
-    - name: 6. 打包 Android 16 成果並傳送至手機
+    - name: 6. 打包成品並傳送至手機
       uses: actions/upload-artifact@v4
       with:
         name: AOSP-16-Galaxy-M14-ROM
-        path: /work/aosp/out/target/product/m14x/*.zip
-        
+        path: /work/aosp/out/target/product/*/*.zip
