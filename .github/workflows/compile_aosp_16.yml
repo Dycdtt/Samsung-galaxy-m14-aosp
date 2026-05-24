@@ -1,13 +1,13 @@
 name: Build AOSP 16 for Galaxy M14 5G
 
 on:
-  workflow_dispatch: # 讓你在手機網頁上一鍵點擊開工
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04 # Android 16 建議使用較新的 Ubuntu 環境編譯
+    runs-on: ubuntu-24.04
     steps:
-    - name: 1. 清除雲端伺服器沒用的空間（AOSP 16 非常龐大）
+    - name: 1. 清除雲端伺服器沒用的空間（已修正路徑名稱）
       uses: easimon/minimize-some-disk-space@master
       with:
         build-mount-path: '/work'
@@ -21,7 +21,7 @@ jobs:
         sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev \
         gcc-multilib g++-multilib libc6-dev-i386 libncurses5 lib32ncurses5-dev x11proto-core-dev \
         libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig libssl-dev \
-        rsync libncursesw5-dev bc tmux libncurses5-dev python3 python3-pip Ensure
+        rsync libncursesw5-dev bc tmux libncurses5-dev python3 python3-pip
 
     - name: 3. 下載並配置 Google Repo 工具
       run: |
@@ -35,17 +35,13 @@ jobs:
         git config --global user.name "YourName"
         git config --global user.email "you@example.com"
         mkdir -p /work/aosp && cd /work/aosp
-        # 初始化為 Android 16 的官方穩定分支 (android-16.0.0 相關主要分支)
         repo init -u https://android.googlesource.com/platform/manifest -b android16-release --depth=1
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
     - name: 5. 載入 M14 5G 的 64位元硬體裝置樹並強行注入 Android 16 記憶體優化
       run: |
         cd /work/aosp
-        # 下載你的 M14 裝置樹（需確保該裝置樹有針對 Android 16 升級修改）
         git clone https://github.com/your_github/android_device_samsung_m14x.git device/samsung/m14x
-        
-        # 針對 4GB RAM 的 M14 注入 Android 16 專屬的低記憶體控制指令
         echo "ro.config.low_ram=true" >> device/samsung/m14x/system.prop
         echo "ro.config.android16_ext_lowram=true" >> device/samsung/m14x/system.prop
 
@@ -53,7 +49,6 @@ jobs:
       run: |
         cd /work/aosp
         source build/envsetup.sh
-        # 選擇 Android 16 的 M14 編譯目標
         lunch aosp_m14x-userdebug
         mka bacon -j$(nproc)
 
