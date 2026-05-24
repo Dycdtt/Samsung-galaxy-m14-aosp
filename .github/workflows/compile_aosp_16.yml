@@ -30,14 +30,13 @@ jobs:
         repo init -u https://android.googlesource.com/platform/manifest -b android16-release --depth=1
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
-    - name: 4. 導入你挖到的 M14 5G 晶片硬體裝置樹
+    - name: 4. 導入 M14 5G 晶片硬體裝置樹（指定 lineage-22.2 分支）
       run: |
         cd /work/aosp
-        # 複製你截圖中找到的 Exynos 1330 真實裝置樹
-        git clone https://github.com/devhunter1/android_device_samsung_s5e8535-common.git device/samsung/s5e8535-common
+        # 複製你找到的 Exynos 1330 裝置樹，並指定你畫面中的正確分支
+        git clone -b lineage-22.2 https://github.com/devhunter1/android_device_samsung_s5e8535-common.git device/samsung/s5e8535-common
         
-        # 為 4GB RAM 的 M14 注入 Android 16 低記憶體流暢優化
-        mkdir -p device/samsung/s5e8535-common
+        # 為 4GB RAM 的 M14 注入 Android 16 低記憶體流暢優化設定檔
         echo "ro.config.low_ram=true" >> device/samsung/s5e8535-common/system.prop
         echo "ro.config.android16_ext_lowram=true" >> device/samsung/s5e8535-common/system.prop
 
@@ -45,7 +44,7 @@ jobs:
       run: |
         cd /work/aosp
         source build/envsetup.sh
-        # 載入 Exynos 1330 (s5e8535) 的編譯目標
+        # 載入該晶片組的編譯目標
         lunch aosp_s5e8535_common-userdebug
         mka bacon -j$(nproc)
 
