@@ -1,4 +1,4 @@
-Name: Build AOSP 13 for Galaxy M14 5G
+name: Build AOSP 13 for Galaxy M14 5G
 
 on:
   workflow_dispatch:
