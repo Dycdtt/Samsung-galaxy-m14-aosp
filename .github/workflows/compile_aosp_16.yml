@@ -1,4 +1,4 @@
-name: Build AOSP 16 for Galaxy M14 5G
+Name: Build AOSP 13 for Galaxy M14 5G
 
 on:
   workflow_dispatch:
@@ -7,12 +7,19 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-    - name: 1. 深度清理空間 (釋放所有無用緩存)
+    - name: 1. 深度清理空間 (釋放所有無用緩存與環境)
       run: |
+        echo "=== 清理前硬碟狀態 ==="
+        df -h
+        # 移除大量佔用空間的預裝軟體
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/local/share/boost
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         sudo apt-get clean
+        sudo rm -rf /var/lib/apt/lists/*
+        echo "=== 清理後硬碟狀態 ==="
         df -h
 
     - name: 2. 下載並配置 Google Repo 工具
@@ -22,30 +29,46 @@ jobs:
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: 3. 初始化並下載 Android 16 (精簡模式)
+    - name: 3. 初始化並下載 Android 13 (極致省空間精簡模式)
       run: |
         git config --global user.name "YourName"
         git config --global user.email "you@example.com"
         cd $GITHUB_WORKSPACE
-        # 使用 --depth=1 來大幅縮減下載資料量
-        repo init -u https://android.googlesource.com/platform/manifest -b android16-release --depth=1
+        
+        # 修正為 Android 13 分支，加入 --single-branch、--no-tags 與 --no-clone-bundle 徹底剝離垃圾資料
+        repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1 --single-branch --no-tags --no-clone-bundle
+        
+        # 同步代碼，只同步當前分支 (-c)，強行排除所有標籤紀錄
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
-    - name: 4. 導入 M14 5G 晶片硬體裝置樹
+    - name: 4. 導入 M14 5G 晶片硬體裝置樹 (對應 Android 13 分支)
       run: |
         cd $GITHUB_WORKSPACE
-        git clone -b lineage-22.2 --depth=1 https://github.com/devhunter1/android_device_samsung_s5e8535-common.git device/samsung/s5e8535-common
+        # 注意：如果你的裝置樹有對應 Android 13 (例如 lineage-20)，記得把下面的 -b 參數改成對應的分支名稱
+        git clone -b lineage-20 --depth=1 https://github.com/devhunter1/android_device_samsung_s5e8535-common.git device/samsung/s5e8535-common
 
-    - name: 5. 點火！編譯 (使用較小的編譯目標)
+    - name: 5. 點火！編编译 (極致省空間設定)
       run: |
         cd $GITHUB_WORKSPACE
+        
+        # 關閉 ccache 緩存，省下幾十 GB 的硬碟空間，防止硬碟炸裂
+        export USE_CCACHE=0
+        export CCACHE_DISABLE=1
+        
+        # 載入 Android 編譯環境
         source build/envsetup.sh
+        
+        # 選擇 AOSP 13 對應的常規客製化編譯目標 (通常格式為 aosp_[機型]-userdebug)
         lunch aosp_s5e8535_common-userdebug
-        # 使用 -j4 限制同時編譯的執行緒，防止記憶體不足崩潰
-        mka bacon -j4
+        
+        # 使用 -j4 限制執行緒防止記憶體崩潰，並用標準的 make 指令編譯
+        make systemimage -j4
 
     - name: 6. 打包成品
       uses: actions/upload-artifact@v4
       with:
-        name: AOSP-16-Galaxy-M14-ROM
-        path: out/target/product/*/*.zip
+        name: AOSP-13-Galaxy-M14-ROM
+        # 修正打包路徑，確保能精準抓到編編出來的 system.img 與相關鏡像
+        path: |
+          out/target/product/*/*.img
+          out/target/product/*/*.zip
