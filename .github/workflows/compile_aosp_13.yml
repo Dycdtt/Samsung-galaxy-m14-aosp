@@ -35,8 +35,9 @@ jobs:
         git config --global user.email "you@example.com"
         cd $GITHUB_WORKSPACE
         
-        # 修正為 Android 13 分支，加入 --single-branch、--no-tags 與 --no-clone-bundle 徹底剝離垃圾資料
-        repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1 --single-branch --no-tags --no-clone-bundle
+        # 新的正確代碼（拿掉 --single-branch）
+repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1 --no-tags --no-clone-bundle
+
         
         # 同步代碼，只同步當前分支 (-c)，強行排除所有標籤紀錄
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
