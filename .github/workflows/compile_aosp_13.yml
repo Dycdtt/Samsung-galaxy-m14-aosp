@@ -36,7 +36,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         
         # 新的正確代碼（拿掉 --single-branch）
-repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1 --no-tags --no-clone-bundle
+        repo init -u            https://android.googlesource.com/platform/manifest -b android-13.0.0_r1 --depth=1 --no-tags --no-clone-bundle
 
         
         # 同步代碼，只同步當前分支 (-c)，強行排除所有標籤紀錄
